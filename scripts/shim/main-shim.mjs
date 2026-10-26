@@ -26,14 +26,12 @@ import path from 'node:path'
 const PROBES = (globalThis.__GO_PROBES__ = {})
 const LOG = '/data/storage/el2/base/files/shim-log.txt'
 const EL2 = '/data/storage/el2/base/files'
-// 日志三路:①沙箱文件(hdc 读不到) ②公共 Documents(仅三目录 ACL 到位才写成功——
-// 既当日志通道,也是**ACL 生效的实证**) ③console→hilog(会被 flowcontrol 丢)
-const LOG_PUBLIC = '/storage/Users/currentUser/Documents/Smart Office/shim-log.txt'
+// 日志两路:①沙箱文件(hdc shell 经 /data/app/el2/100/base/<bundle>/files/
+// 直读,grant-acl.sh 的 ACL 生效判据就是它) ②console→hilog(会被
+// flowcontrol 丢)。不落公共目录——产品的用户可见目录不留调试文件。
 const log = (m) => {
   const line = `${new Date().toISOString()} ${m}\n`
-  for (const p of [LOG, LOG_PUBLIC]) {
-    try { fs.mkdirSync(path.dirname(p), { recursive: true }); fs.appendFileSync(p, line) } catch {}
-  }
+  try { fs.mkdirSync(path.dirname(LOG), { recursive: true }); fs.appendFileSync(LOG, line) } catch {}
   try { console.log(`[GO-SHIM] ${m}`) } catch {}
 }
 

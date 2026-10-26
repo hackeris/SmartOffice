@@ -61,8 +61,10 @@ hdc fport tcp:9333 tcp:9333
 | 通道 | 位置 | 什么时候能用 |
 | --- | --- | --- |
 | **沙箱文件**（首选） | 物理路径 `/data/app/el2/100/base/<bundle>/files/shim-log.txt` | 一直可读，不受 hilog 流控影响 |
-| 公共目录 | `<用户目录>/Documents/<应用名>/shim-log.txt` | **只有三目录权限到位才写得进去**——写成功本身就是 ACL 生效的实证 |
 | hilog | `hdc shell "hilog -x \| grep GO-SHIM"` | 启动期的日志常被流控丢掉，只适合看运行期 |
+
+沙箱日志里三目录探针（documents/downloads/desktop）的结果是 ACL 是否生效的判据
+（`grant-acl.sh` 自动判读）；不往公共目录写日志，产品的用户可见目录不留调试文件。
 
 读沙箱文件要认准**物理路径**：
 

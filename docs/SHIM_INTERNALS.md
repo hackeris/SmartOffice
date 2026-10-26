@@ -131,8 +131,10 @@ shim 每 1.5 秒轮询这个信号文件
 | 通道 | 失效条件 |
 | --- | --- |
 | 沙箱文件 `/data/storage/el2/base/files/shim-log.txt` | 应用视角的路径，hdc 读不到；要从物理路径读，见 `DEVICE_OPERATIONS.md` |
-| 公共目录 `<用户目录>/Documents/<应用名>/shim-log.txt` | **只有三目录权限到位才写得进去**——能写成本身就是权限生效的证据 |
 | console → hilog | 会被 flowcontrol 丢，启动期的日志尤其容易缺 |
+
+不写公共目录：产品的用户可见目录（如 `Documents/<应用名>/`）不留调试文件；ACL 是否
+生效以沙箱日志里三目录探针的结果为准（`grant-acl.sh` 自动判读）。
 
 另外，未捕获异常和未处理的 Promise 拒绝在**最开头**就装了处理器——因为退出时
 console 的缓冲可能丢失，只有文件日志靠得住。
