@@ -6,7 +6,7 @@
 
 | 目录 | 依赖 | 当前 commit | 锚点 | remote(fork) |
 | --- | --- | --- | --- | --- |
-| `genoffice/` | 应用本体 | `1c6b9ab5` | fork 默认分支 **`main`**（= 工作分支 `ohos/sota-debrand-v0.11.829`），发布 tag **`ohos-v1.0.4`**（基线锚点 `ohos-v1.0.1`） | `github.com/hackeris/genoffice` |
+| `genoffice/` | 应用本体 | `73db89bb` | fork 默认分支 **`main`**（= 工作分支 `ohos/sota-debrand-v0.11.829`），发布 tag **`ohos-v1.0.5`**（基线锚点 `ohos-v1.0.1`） | `github.com/hackeris/genoffice` |
 | `electron/` | Electron 本体（HarmonyOS fork） | `3af8ccb` | tag **`ohos-v37.2.0`** | `gitcode.com/openharmony-sig/electron`（官方仓） |
 | `node-sqlite/` | node:sqlite 独立实现（NAPI addon 源，vendor 编译用） | `f529c62` | tag **`v3.3.0`** | `github.com/photostructure/node-sqlite`（上游，只读） |
 
@@ -21,6 +21,7 @@
 | `14a54c1e` | `ohos/sota-debrand-v0.11.829` | 无 | 在 `ohos-v1.0.1` 之上重放 26 个去上游化/品牌替换/鸿蒙适配补丁，再加对账/pin 适配修复 |
 | `1b7178f5` | `ohos/sota-debrand-v0.11.829` 与 **`main`** | **`ohos-v1.0.3`** | 1.0.3 发布内容：文件索引 sqlite 以自研纯 C 绑定复活（sota-sqlite，见 `apps/shell/vendor/sqlite/`） |
 | `1c6b9ab5` | `ohos/sota-debrand-v0.11.829` 与 **`main`** | **`ohos-v1.0.4`** | sheets AI 面板默认收起对齐其余五应用（上游 `aiPanelInitiallyOpen` 默认展开） |
+| `73db89bb` | `ohos/sota-debrand-v0.11.829` 与 **`main`** | **`ohos-v1.0.5`** | AI 生成内容显式合规标识：AI 回复加「AI生成」徽章（七处消费方），六端写入区间旁可关闭浮标（呈现层，保存文件零残留） |
 
 旧产品线（上游 `316ded6` 基线、26 个补丁重放前）保留在 `ohos/sota-debrand` 分支
 （tip `edec2ef9`）。主仓 master 与 fork 默认分支 `main` 均已晋升新线——`main` 是
@@ -48,7 +49,7 @@ git -C thirdparty/electron lfs pull
 
 # 校验:submodule 钉的 commit 是否正好等于某个 tag
 git -C thirdparty/electron describe --tags --exact-match     # 应输出 ohos-v37.2.0
-git -C thirdparty/genoffice describe --tags --exact-match     # 应输出 ohos-v1.0.4
+git -C thirdparty/genoffice describe --tags --exact-match     # 应输出 ohos-v1.0.5
 
 # fork 推送(在 submodule 里执行,tag 随分支一起推)
 git push origin <分支> && git push origin <tag>
