@@ -319,7 +319,7 @@ export default class EntryAbility extends WebAbility {
 
   // 三目录(READ_WRITE_{DOCUMENTS,DOWNLOAD,DESKTOP}_DIRECTORY)同为 **user_grant**:
   // 声明 + profile ACL 只给"申请资格",须运行时弹窗授予——否则写 /storage/Users/currentUser/*
-  // 报 EPERM(2026-09-24 实测:未申请时三目录全 EPERM,shim 第⑦桩降级 el2)。
+  // 报 EPERM(2026-09-24 实测:未申请时三目录全 EPERM)。
   private requestStoragePermissions(): void {
     const perms: Array<Permissions> = [
       'ohos.permission.READ_WRITE_DOCUMENTS_DIRECTORY',
@@ -329,18 +329,37 @@ export default class EntryAbility extends WebAbility {
     try {
       abilityAccessCtrl.createAtManager()
         .requestPermissionsFromUser(this.context, perms)
-        .then((res) => { console.info(`storage perm: ${JSON.stringify(res.authResults)}`) })
+        .then((res) => {
+          console.info(`storage perm: ${JSON.stringify(res.authResults)}`);
+          if (res.authResults.some((result: number) => result === 0)) {
+            this.writeStorageGrantedSignal();
+          }
+        })
         .catch((e: BusinessError) => { console.warn(`storage perm: ${JSON.stringify(e)}`) });
     } catch (e) {
       console.warn(`storage perm precheck: ${JSON.stringify(e)}`);
     }
   }
 
+  // 授权完成信号:shim 首次启动探测到目录不可写时轮询本文件,重探测通过后通知
+  // 首页重读根目录与列表(不降级 el2,也不用重启应用)
+  private static readonly STORAGE_GRANTED = '/data/storage/el2/base/files/storage-granted.json';
+
+  private writeStorageGrantedSignal(): void {
+    try {
+      const f = fs.openSync(EntryAbility.STORAGE_GRANTED,
+        fs.OpenMode.CREATE | fs.OpenMode.READ_WRITE | fs.OpenMode.TRUNC);
+      fs.writeSync(f.fd, JSON.stringify({ granted: true, at: Date.now() }));
+      fs.closeSync(f);
+    } catch (e) {
+      console.warn(`storage granted signal write: ${JSON.stringify(e)}`);
+    }
+  }
+
   // 弹框时机:主界面加载完成后延迟 2s 再申请。启动即弹会盖在未加载的白屏上,
   // 拖慢首屏(2026-09-26 实测)。主界面就绪的信号由 Electron 主进程落标记文件
   // (index.ts 主窗口 did-finish-load → ui-ready);此处先删旧标记(避免吃到
-  // 上一次启动遗留),再 500ms 轮询,最长 60s;超时跳过本轮申请(未授权走
-  // shim 降级 el2 的既有兜底,下次启动再弹)。
+  // 上一次启动遗留),再 500ms 轮询,最长 60s;超时跳过本轮申请,下次启动再弹。
   private static readonly UI_READY_FILE: string = '/data/storage/el2/base/files/ui-ready';
 
   private pollUiReadyAndRequestStorage(attempt: number): void {

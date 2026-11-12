@@ -23,7 +23,7 @@
 | A2 | READ_PASTEBOARD 授权框 | 冷启动观察 | 弹系统授权框(user_grant) |
 | A3 | 剪贴板读侧恢复 | 允许后看 hilog | `clipboard 读侧已恢复(授权信号确认)` |
 | A4 | 剪贴板端到端 | 系统里复制文本 → 应用内粘贴 | 内容正确 |
-| A5 | 三目录落点 | 看 hilog 第⑦桩 | 三条均报 `系统目录可写`(出现 `降级 → el2` 即该条 ACL 未生效) |
+| A5 | 三目录落点 | 看 hilog 第⑦桩 | 三条均报 `系统目录可写`(授权前报 `系统目录不可写(等待授权),不降级`;授权后出现 `storage grant signal: 重新探测 documents=true` 并通知首页刷新) |
 | A6 | 三目录写盘 | 另存到 Download / Desktop | 系统文件管理器可见该文件 |
 
 > A2 若未弹框:检查 trim 声明与 profile ACL 是否覆盖 READ_PASTEBOARD(两门槛闭环,见 `M1_ACCEPTANCE.md` §4.1)。

@@ -58,7 +58,7 @@
 |---|---|---|---|
 | `kernel.ALLOW_WRITABLE_CODE_MEMORY` | ACL system_grant | V8 JIT/wasm,引擎级必需 | (申请续期;曾由 MagicFlow 档覆盖) |
 | `ohos.permission.READ_PASTEBOARD` | **user_grant** | 剪贴板读取 | shim 桩⑭ **授权信号文件制(v2)**:未授权绝不调用原生读侧(调用即弹系统窗,2026-09-22 实测);EntryAbility 查/申请后写 `clip-perm.json`,shim 轮询恢复 |
-| `READ_WRITE_DOCUMENTS_DIRECTORY` | ACL **user_grant** | Documents 直读直写 | 须运行时弹窗授予(见 §4.5 约束 3);未授予时 shim 第⑦桩降级 el2 |
+| `READ_WRITE_DOCUMENTS_DIRECTORY` | ACL **user_grant** | Documents 直读直写 | 须运行时弹窗授予(见 §4.5 约束 3);未授予时 shim 第⑦桩只记录不可写,授权完成后自动重探测并通知首页重读根目录与列表(不降级 el2) |
 | `READ_WRITE_DOWNLOAD_DIRECTORY` | ACL **user_grant** | Download 直写 | 同上 |
 | `READ_WRITE_DESKTOP_DIRECTORY` | ACL **user_grant** | Desktop 直写 | 同上 |
 

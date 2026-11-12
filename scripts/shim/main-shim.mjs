@@ -107,38 +107,61 @@ if (app.isPackaged !== true) {
 }
 log(`stub: app.isPackaged(raw=${PROBES.rawIsPackaged} → ${app.isPackaged})`)
 
-// ---- ⑦ 系统目录(documents/downloads/desktop)可写探测 + 降级 ----
-// 三目录 ACL 到手后系统目录天然可写(探测通过则不干预);未到手时写入抛错会让
-// 保存链断裂,故逐个探测并把不可写的 setPath 降级到 el2(功能不中断)。
+// ---- ⑦ 系统目录(documents/downloads/desktop)可写探测 ----
+// 三目录 ACL 到手后系统目录天然可写。首次启动时权限对话框还没弹,写入会 EPERM;
+// 这里只探测并记录,不再把 app path 降级到 el2。降级的代价:用户文档落进沙箱,
+// 权限到手后重启切回系统目录,文件从列表消失;沙箱路径也进不了系统回收站,删除必失败。
 // documents 多探一层产品子目录——应用的文件落点在那里。改名前旧版本落点
 // Documents/Sota Office/ 不做兼容探测:旧文件经最近列表的绝对路径仍可打开。
-// fb 是系统目录不可写时 el2 沙箱内的降级目录名,同样跟随产品名。
 PROBES.paths = {}
 PROBES.pathWritable = {}
-for (const [name, sub, fb] of [
-  ['documents', 'Smart Office', 'Smart Office'],
-  ['downloads', '', 'Download'],
-  ['desktop', '', 'Desktop'],
-]) {
-  try {
-    const dir = app.getPath(name)
-    const probeDir = sub ? path.join(dir, sub) : dir
-    fs.mkdirSync(probeDir, { recursive: true })
-    const f = path.join(probeDir, '.go-write-probe')
-    fs.writeFileSync(f, 'ok'); fs.unlinkSync(f)
-    PROBES.paths[name] = dir
-    PROBES.pathWritable[name] = 'system'
-    log(`${name}: 系统目录可写(${dir}),不降级`)
-  } catch (e) {
+const STORAGE_GRANTED = path.join(EL2, 'storage-granted.json')
+function probeSystemDirs() {
+  let documents = false
+  for (const [name, sub] of [
+    ['documents', 'Smart Office'],
+    ['downloads', ''],
+    ['desktop', ''],
+  ]) {
     try {
-      const fallback = path.join(EL2, fb)
-      fs.mkdirSync(fallback, { recursive: true })
-      app.setPath(name, fallback)
-      PROBES.paths[name] = fallback
-      PROBES.pathWritable[name] = `fallback(${e?.code ?? ''}${e?.message ?? e})`
-      log(`${name}: 降级 → ${fallback}(${e?.message})`)
-    } catch (e2) { log(`${name} 降级失败:${e2?.message}`) }
+      const dir = app.getPath(name)
+      const probeDir = sub ? path.join(dir, sub) : dir
+      fs.mkdirSync(probeDir, { recursive: true })
+      const f = path.join(probeDir, '.go-write-probe')
+      fs.writeFileSync(f, 'ok'); fs.unlinkSync(f)
+      PROBES.paths[name] = dir
+      PROBES.pathWritable[name] = 'system'
+      if (name === 'documents') documents = true
+      log(`${name}: 系统目录可写(${dir})`)
+    } catch (e) {
+      PROBES.pathWritable[name] = `unwritable(${e?.code ?? ''}${e?.message ?? e})`
+      log(`${name}: 系统目录不可写(等待授权),不降级(${e?.message})`)
+    }
   }
+  return documents
+}
+if (!probeSystemDirs()) {
+  // EntryAbility 在目录权限申请返回后落信号文件;重新探测通过就通知首页
+  // 重读根目录与列表(不降级、不 reload 整个渲染进程)。
+  const timer = setInterval(() => {
+    let granted = false
+    try { granted = fs.existsSync(STORAGE_GRANTED) } catch {}
+    if (!granted) return
+    try { fs.unlinkSync(STORAGE_GRANTED) } catch {}
+    const documents = probeSystemDirs()
+    log(`storage grant signal: 重新探测 documents=${documents}`)
+    if (!documents) return
+    clearInterval(timer)
+    import('electron').then(({ BrowserWindow }) => {
+      for (const win of BrowserWindow.getAllWindows()) {
+        if (win.isDestroyed()) continue
+        if (win.webContents.getURL().includes('/out/renderer/index.html')) {
+          win.webContents.send('home:storage-ready')
+        }
+      }
+      log('storage grant signal: 已通知首页刷新')
+    }).catch((e) => log(`storage grant notify 失败:${e?.message}`))
+  }, 1000)
 }
 
 // ---- ⑧ 单实例三 API(实测 raw returns:true;打桩一致)----
